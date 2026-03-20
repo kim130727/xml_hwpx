@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>주보 - 예배순서</title>
+  <style>
+    :root{
+      --green:#4f8b3a;
+      --green2:#7fb36a;
+      --ink:#222;
+      --dot:#7a6a8a;
+      --box:#5b2b52;
+      --paper:#f6efe6;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      color:var(--ink);
+      background:#fff;
+      display:flex;
+      justify-content:center;
+      padding:18px;
+    }
+    .sheet{
+      width:min(920px, 100%);
+      border:0;
+      display:grid;
+      grid-template-columns: 0.36fr 0.64fr;
+      gap:14px;
+      align-items:stretch;
+    }
+
+    /* LEFT */
+    .left{
+      background:linear-gradient(#f8f1e9, #f7efe6 65%, #eef6ea);
+      border:1px solid #e5d9cb;
+      padding:18px 16px 14px;
+      position:relative;
+      overflow:hidden;
+      min-height:720px;
+    }
+    .left h2{
+      margin:10px 0 22px;
+      text-align:center;
+      letter-spacing:.18em;
+      font-weight:800;
+      color:#2f6f2b;
+      font-size:24px;
+      text-shadow:0 1px 0 rgba(0,0,0,.05);
+    }
+    .prayer-block{
+      margin:0 6px 22px;
+      text-align:center;
+      line-height:1.55;
+      font-weight:700;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:22px;height:22px;
+      border-radius:50%;
+      background:#2f6f2b;
+      color:#fff;
+      font-size:13px;
+      font-weight:900;
+      margin-bottom:6px;
+    }
+    .prayer-text{
+      font-weight:700;
+      color:#222;
+      font-size:14px;
+      white-space:pre-line;
+    }
+    .scene{
+      margin-top:18px;
+      height:150px;
+      border-radius:10px;
+      background:
+        radial-gradient(circle at 18% 78%, rgba(86,154,88,.35), transparent 58%),
+        radial-gradient(circle at 62% 74%, rgba(86,154,88,.28), transparent 60%),
+        linear-gradient(#f2f7ee, #dbeed4);
+      position:relative;
+      overflow:hidden;
+      border:1px solid rgba(79,139,58,.25);
+    }
+    .scene:before{
+      content:"";
+      position:absolute; inset:auto -30px -38px -30px;
+      height:120px;
+      background:linear-gradient(90deg, rgba(79,139,58,.35), rgba(79,139,58,.12));
+      border-radius:60% 60% 0 0;
+      transform:skewX(-8deg);
+    }
+    .scene .girl{
+      position:absolute;
+      left:40%;
+      bottom:20px;
+      font-size:26px;
+    }
+    .scene .dog{
+      position:absolute;
+      left:33%;
+      bottom:18px;
+      font-size:22px;
+      opacity:.9;
+    }
+
+    .account{
+      margin-top:14px;
+      border:3px solid #2f6f2b;
+      padding:12px 10px;
+      text-align:center;
+      background:#fff;
+    }
+    .account .title{
+      font-weight:900;
+      color:#2f6f2b;
+      letter-spacing:.18em;
+      margin-bottom:8px;
+      font-size:18px;
+    }
+    .account .line{
+      color:#2f6f2b;
+      font-weight:800;
+      font-size:14px;
+    }
+    .account .church{
+      display:inline-block;
+      margin-top:2px;
+      color:#2f6f2b;
+      font-weight:900;
+      font-size:14px;
+      text-decoration:underline;
+      text-underline-offset:3px;
+    }
+
+    /* RIGHT */
+    .right{
+      background:#fff;
+      border:1px solid #e9eef0;
+      padding:0 0 10px;
+      min-height:720px;
+    }
+    .right .topband{
+      background:linear-gradient(90deg, #dfeedd, #9dcc8c 40%, #dfeedd);
+      padding:14px 10px;
+      text-align:center;
+      font-weight:900;
+      letter-spacing:.35em;
+      font-size:22px;
+      border-bottom:2px solid #111;
+    }
+
+    .meta{
+      padding:10px 12px 0;
+      border-bottom:1px dotted #999;
+    }
+    .meta-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:10px 4px;
+      border-bottom:1px dotted #999;
+      font-weight:800;
+    }
+    .meta-row:last-child{border-bottom:none}
+    .meta-row .mid{
+      font-weight:800;
+      color:#2f6f2b;
+    }
+
+    .order{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:8px;
+      font-weight:800;
+    }
+    .order td{
+      padding:11px 10px;
+      vertical-align:middle;
+      border-bottom:2px dotted var(--dot);
+      font-size:15px;
+    }
+    .order .col-a{width:84px; color:#2f6f2b; font-weight:900; text-align:left}
+    .order .col-b{width:auto; text-align:center}
+    .order .col-c{width:148px; text-align:right; padding-right:14px}
+    .order .small{
+      display:block;
+      font-weight:900;
+      color:#2f6f2b;
+      margin-top:6px;
+    }
+    .order .sub{
+      display:block;
+      margin-top:6px;
+      font-weight:900;
+      color:#444;
+      font-size:14px;
+    }
+
+    .notice{
+      margin:14px 12px 10px;
+      border:3px solid var(--box);
+      padding:12px 14px;
+      background:#fff;
+      font-weight:800;
+    }
+    .notice ul{
+      margin:0;
+      padding-left:18px;
+      line-height:1.65;
+    }
+
+    .vol{
+      margin:10px 12px 0;
+      border:2px solid #6c4a6b;
+    }
+    .vol .head{
+      background:linear-gradient(90deg, #e6f1e3, #b7d8aa 45%, #e6f1e3);
+      text-align:center;
+      font-weight:900;
+      padding:10px 8px;
+      font-size:20px;
+      letter-spacing:.12em;
+      border-bottom:2px solid #6c4a6b;
+    }
+    .vol table{
+      width:100%;
+      border-collapse:collapse;
+      font-weight:900;
+    }
+    .vol td{
+      border-right:2px solid #6c4a6b;
+      border-bottom:2px solid #6c4a6b;
+      padding:12px 10px;
+      text-align:center;
+      font-size:15px;
+    }
+    .vol td:last-child{border-right:none}
+    .vol .rowlabel{
+      width:92px;
+      color:#2f6f2b;
+      font-weight:900;
+      text-align:left;
+      padding-left:12px;
+      white-space:nowrap;
+    }
+    .vol .rowlabel .hint{
+      display:block;
+      font-size:13px;
+      margin-top:4px;
+      color:#2f6f2b;
+    }
+    .vol .full{
+      border-right:none !important;
+      font-weight:900;
+    }
+
+    @media (max-width: 760px){
+      .sheet{grid-template-columns:1fr; gap:10px}
+      .left,.right{min-height:auto}
+    }
+  </style>
+</head>
+
+<body>
+  <main class="sheet">
+
+    <!-- LEFT: 공동 기도 제목 -->
+    <section class="left">
+      <h2>공동 기도 제목</h2>
+
+      <div class="prayer-block">
+        <div class="badge">1</div>
+        <div class="prayer-text">
+오늘 우리가
+예배하고자 하는 하나님이
+어떤 분이신지 고백하고,
+우리는 하나님께
+어떤 존재인지도 고백하는
+기도도 드리겠습니다...
+        </div>
+      </div>
+
+      <div class="prayer-block" style="margin-top:6px;">
+        <div class="badge">2</div>
+        <div class="prayer-text">
+오늘 우리의
+예배를 통해
+하나님의 은혜와
+사랑을 경험하고,
+한 주간의 삶을
+하나님의 영광을 위해
+살아가는 생명력을
+공급받는 예배로
+이끌어주시길
+기도하겠습니다.
+        </div>
+      </div>
+
+      <div class="scene" aria-hidden="true">
+        <div class="girl">👧</div>
+        <div class="dog">🐕</div>
+      </div>
+
+      <div class="account">
+        <div class="title">＊ 교회 계좌 ＊</div>
+        <div class="line">우리은행&nbsp;&nbsp;1005-403-007289</div>
+        <span class="church">새누리3교회</span>
+      </div>
+    </section>
+
+    <!-- RIGHT: 예배 순서 -->
+    <section class="right">
+      <div class="topband">예 배</div>
+
+      <div class="meta">
+        <div class="meta-row">
+          <span>주일 1부 예배</span>
+          <span>오전 09시 30분</span>
+        </div>
+        <div class="meta-row">
+          <span>주일 2부 예배</span>
+          <span class="mid">(Youtube 동시 중계)</span>
+          <span>오전 11시 30분</span>
+        </div>
+        <div class="meta-row" style="justify-content:flex-end;">
+          <span>인도 : 임지산 목사</span>
+        </div>
+      </div>
+
+      <table class="order" aria-label="예배 순서">
+        <tr>
+          <td class="col-a">예배준비</td>
+          <td class="col-b">예배를 위한 기도<br><span class="sub">(공동기도제목)</span></td>
+          <td class="col-c">다같이</td>
+        </tr>
+        <tr>
+          <td class="col-a">기　도</td>
+          <td class="col-b">주기도문</td>
+          <td class="col-c">다같이</td>
+        </tr>
+        <tr>
+          <td class="col-a">교　제</td>
+          <td class="col-b">성도의 교제</td>
+          <td class="col-c">다같이</td>
+        </tr>
+        <tr>
+          <td class="col-a">찬　양</td>
+          <td class="col-b">경배와 찬양</td>
+          <td class="col-c">다같이</td>
+        </tr>
+        <tr>
+          <td class="col-a">기　도</td>
+          <td class="col-b">대표 기도</td>
+          <td class="col-c">
+            1부&nbsp;김성환<br>
+            2부&nbsp;김선향
+          </td>
+        </tr>
+        <tr>
+          <td class="col-a">말　씀</td>
+          <td class="col-b">
+            그리스도에 이르기까지<br>자라가기
+            <span class="sub">그리스도를 닮아가기 (1)</span>
+          </td>
+          <td class="col-c">임지산목사</td>
+        </tr>
+        <tr>
+          <td class="col-a">묵　상</td>
+          <td class="col-b">마음으로 드리는 예배</td>
+          <td class="col-c">다같이</td>
+        </tr>
+        <tr>
+          <td class="col-a">찬　양</td>
+          <td class="col-b">결단 찬양</td>
+          <td class="col-c">다같이</td>
+        </tr>
+        <tr>
+          <td class="col-a">축　도</td>
+          <td class="col-b">헌금기도 및 축도</td>
+          <td class="col-c">임지산목사</td>
+        </tr>
+        <tr>
+          <td class="col-a">광　고</td>
+          <td class="col-b">교회 소식</td>
+          <td class="col-c">임지산목사</td>
+        </tr>
+      </table>
+
+      <div class="notice">
+        <ul>
+          <li>예배 중 휴대폰을 꺼주시기 바랍니다.</li>
+          <li>헌금함은 예배실 출입문 옆에 비치되어 있습니다.</li>
+          <li>헌금은 들어오실 때 각자 헌금함에 넣어 주시길 바랍니다.</li>
+        </ul>
+      </div>
+
+      <div class="vol">
+        <div class="head">다음 주일 봉사자</div>
+        <table aria-label="다음 주일 봉사자">
+          <tr>
+            <td class="rowlabel">대표기도</td>
+            <td>1부</td>
+            <td>한지훈</td>
+            <td>2부</td>
+            <td>김선미</td>
+          </tr>
+          <tr>
+            <td class="rowlabel">
+              봉사요정
+              <span class="hint">(유·초)</span>
+            </td>
+            <td class="full" colspan="4">더불어 목장</td>
+          </tr>
+        </table>
+      </div>
+
+    </section>
+  </main>
+</body>
+</html>
