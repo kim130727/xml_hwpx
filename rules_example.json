@@ -1,14 +1,37 @@
 [
   {
-    "pattern": "{임진산}",
-    "replacement": "진산이형"
+    "description": "연속 공백 정리",
+    "pattern": "[ \\t]{2,}",
+    "replacement": " "
   },
   {
-    "pattern": "{새누리3교회}",
-    "replacement": "새누리교회넘버쓰리"
+    "description": "문장 끝 공백 제거",
+    "pattern": "[ \\t]+\\n",
+    "replacement": "\n"
   },
   {
-    "pattern": "{다같이}",
-    "replacement": "메롱메롱"
+    "description": "빈 줄 3개 이상 축소",
+    "pattern": "\\n{3,}",
+    "replacement": "\n\n"
+  },
+  {
+    "description": "물결표 범위 표기 통일",
+    "pattern": "\\s*~\\s*",
+    "replacement": "-"
+  },
+  {
+    "description": "대표 기도 띄어쓰기 통일",
+    "pattern": "대표\\s+기도",
+    "replacement": "대표기도"
+  },
+  {
+    "description": "주일 예배 띄어쓰기 통일",
+    "pattern": "주일\\s+예배",
+    "replacement": "주일예배"
+  },
+  {
+    "description": "숫자 번호 목록 통일",
+    "pattern": "(?m)^\\s*([0-9]+)\\)",
+    "replacement": "\\1."
   }
 ]

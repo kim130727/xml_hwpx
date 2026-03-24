@@ -1,253 +1,117 @@
+# 교회 전자주보봇 HWPX 자동편집
 
-“HWPX 안에 이미 들어 있는 특정 문자열을 찾아서, JSON에 정의한 값으로 정규식 치환”
+HWPX 템플릿 안의 치환 표식과 정규식 규칙을 이용해 매주 전자주보를 자동으로 갱신하는 프로젝트입니다.
 
-uv run replace_hwpx_by_regex_json.py --input start.hwpx --json rules_example.json --output result.hwpx
+이 프로젝트는 다음 흐름을 기본으로 합니다.
 
-예를 들면 이런 것입니다.
+1. HWPX 템플릿에 `{{주보일자}}`, `{{설교제목}}` 같은 표식을 넣습니다.
+2. 매주 바뀌는 내용을 JSON으로 작성합니다.
+3. Python 스크립트가 HWPX 내부 XML을 열어 표식을 치환합니다.
+4. 정규식 규칙으로 날짜, 성경본문, 공백, 번호 형식을 정리합니다.
+5. 결과 HWPX와 검수용 리포트를 생성합니다.
 
-* 원본 HWPX 내용: `홍길동`
-* JSON: `"홍길동" → "김철수"`
-* 또는
-* 원본 HWPX 내용: `2025.03.01`
-* JSON 정규식: `\d{4}\.\d{2}\.\d{2}` → `2026.03.23`
+완전한 레이아웃 재조판보다는 "틀은 고정하고 값만 안전하게 교체"하는 운영 방식에 맞춰져 있습니다.
 
-즉 핵심은 `{{NAME}}` 같은 토큰이 아니라,
-**문서 안의 실제 기존 값 자체를 정규식으로 찾아 바꾸는 방식**입니다.
-
-아래처럼 README를 다시 쓰는 것이 맞습니다.
-
----
-
-# README.md
-
-````md
-# HWPX 정규식 치환 도구
-
-HWPX(한글 문서) 내부 XML을 읽어서,  
-문서 안에 이미 존재하는 특정 문자열이나 패턴을  
-JSON에 정의한 정규식 규칙으로 치환하는 Python 도구입니다.
-
----
-
-## 주요 목적
-
-이 도구는 플레이스홀더(`{{NAME}}`)를 치환하는 방식이 아니라,  
-HWPX 문서 안의 **기존 텍스트 값**을 찾아서  
-JSON 규칙에 따라 **정규식 기반으로 변경**하는 용도입니다.
-
-예:
-
-- `홍길동` → `김철수`
-- `2025.03.01` → `2026.03.23`
-- `010-1234-5678` → `010-9999-0000`
-
----
-
-## 프로젝트 구조
+## 프로젝트 구성
 
 ```text
 .
-├── replace_hwpx_by_regex_json.py   # HWPX 내부 문자열을 정규식으로 치환
-├── rules_example.json              # 치환 규칙 예시
-└── README.md
-````
+├─ replace_hwpx_by_regex_json.py   # HWPX 치환 및 정규식 후처리 엔진
+├─ main.py                         # 간단한 실행 진입점
+├─ bulletin_data_example.json      # 주보 데이터 예시
+├─ rules_example.json              # 정규식 후처리 규칙 예시
+├─ church_terms_dict.json          # 교회 용어 예외 사전 예시
+├─ template_guideline.md           # 템플릿 설계 가이드
+└─ work/                           # 대용량 HWPX 및 생성 결과 보관
+```
 
----
+## 준비 데이터
 
-## 작동 방식
+`bulletin_data_example.json`
 
-1. HWPX 파일을 ZIP처럼 열기
-2. `Contents/section*.xml` 읽기
-3. JSON에 정의한 정규식 규칙 적용
-4. 수정된 XML을 다시 HWPX로 압축 저장
+```json
+{
+  "주보일자": "2026년 3월 29일 주일예배",
+  "예배명": "주일 오전예배",
+  "설교제목": "믿음으로 걷는 사람",
+  "성경본문": "히브리서 11:1-6",
+  "대표기도": "김은혜 집사",
+  "찬양제목": "은혜 아니면",
+  "광고목록": [
+    "다음 주는 성찬식이 있습니다.",
+    "청년부 수련회 신청을 받습니다.",
+    "새가족 환영 모임은 예배 후 친교실에서 진행됩니다."
+  ]
+}
+```
 
----
+## 정규식 규칙 형식
 
-## JSON 규칙 형식
-
-치환 규칙은 배열 형태로 작성합니다.
+`rules_example.json`
 
 ```json
 [
   {
-    "pattern": "홍길동",
-    "replacement": "김철수"
+    "description": "연속 공백 정리",
+    "pattern": "[ \\t]{2,}",
+    "replacement": " "
   },
   {
-    "pattern": "2025\\.03\\.01",
-    "replacement": "2026.03.23"
-  },
-  {
-    "pattern": "010-\\d{4}-\\d{4}",
-    "replacement": "010-9999-0000"
+    "description": "물결표 통일",
+    "pattern": "\\s*~\\s*",
+    "replacement": "-"
   }
 ]
 ```
 
-### 설명
+필드 설명:
 
-* `pattern`: 찾을 정규식
-* `replacement`: 바꿀 값
+- `description`: 규칙 설명
+- `pattern`: Python `re.sub()`에 전달할 정규식
+- `replacement`: 치환 문자열
+- `count`: 선택. 치환 횟수 제한
+- `flags`: 선택. `IGNORECASE`, `MULTILINE`, `DOTALL` 지원
 
----
+## 실행 방법
 
-## 사용 예시
+가상환경이 준비되어 있다면:
 
-```bash
-python replace_hwpx_by_regex_json.py \
-  --input sample.hwpx \
-  --json rules_example.json \
-  --output result.hwpx
+```powershell
+uv run python .\replace_hwpx_by_regex_json.py `
+  --input .\work\start.hwpx `
+  --data .\bulletin_data_example.json `
+  --rules .\rules_example.json `
+  --terms .\church_terms_dict.json `
+  --output .\work\result.hwpx `
+  --report .\work\report.json
 ```
 
----
+또는 간단히:
 
-## 예시 시나리오
-
-원본 문서:
-
-```text
-성명: 홍길동
-연락처: 010-1234-5678
-작성일: 2025.03.01
+```powershell
+uv run python .\main.py
 ```
 
-JSON 규칙:
+## 지원 기능
 
-```json
-[
-  {
-    "pattern": "홍길동",
-    "replacement": "김철수"
-  },
-  {
-    "pattern": "010-\\d{4}-\\d{4}",
-    "replacement": "010-9999-0000"
-  },
-  {
-    "pattern": "2025\\.03\\.01",
-    "replacement": "2026.03.23"
-  }
-]
-```
+- HWPX 내부 `Contents/section*.xml` 일괄 처리
+- `{{키}}` 표식 치환
+- 리스트 값을 번호 목록으로 자동 합성
+- 정규식 후처리
+- 교회 용어 예외 사전 기반 보정
+- 치환 수, 누락 표식, XML 파일별 변경 수를 담은 리포트 생성
 
-변환 결과:
+## 운영 권장 방식
 
-```text
-성명: 김철수
-연락처: 010-9999-0000
-작성일: 2026.03.23
-```
+- 템플릿은 최대한 고정합니다.
+- 광고, 봉사표, 설교 정보처럼 매주 바뀌는 값만 JSON 또는 시트에서 관리합니다.
+- 장평, 표 너비, 셀 테두리, 문단 스타일은 템플릿 단계에서 먼저 안정화합니다.
+- 자동 생성 후 최종 검수는 1분 정도 진행하는 것을 권장합니다.
 
----
+## 한계
 
-## 주의사항
+- HWPX 내부 텍스트가 여러 XML 런으로 분리되어 있으면 일부 긴 문장 치환은 실패할 수 있습니다.
+- 맞춤법과 띄어쓰기의 완전 자동 교정은 범용 규칙만으로 한계가 있습니다.
+- 표 레이아웃의 미세한 재배치는 한글 편집기와 100% 동일하게 재현하기 어렵습니다.
 
-### 1. HWPX는 XML 구조입니다
-
-문서의 텍스트가 XML 내부에서 여러 조각으로 분리되어 있으면
-눈에 보기에는 한 문장이어도 정규식 치환이 실패할 수 있습니다.
-
-예:
-
-* 화면에는 `홍길동`으로 보이지만
-* XML에서는 `홍` + `길동`으로 나뉘어 있을 수 있음
-
-따라서 짧고 명확한 값 치환은 잘 되지만,
-긴 문장 전체 치환은 실패할 수 있습니다.
-
----
-
-### 2. 스타일/레이아웃 보존 목적이 아닙니다
-
-이 도구는 문서 내용을 일부 바꾸는 자동화 도구이며,
-한글의 모든 스타일과 시각적 구조를 해석하는 렌더러는 아닙니다.
-
----
-
-### 3. 특수문자 주의
-
-정규식에서 `.`, `(`, `)`, `[`, `]`, `?`, `+`, `*` 등은
-특수의미가 있으므로 일반 문자로 찾으려면 이스케이프가 필요합니다.
-
-예:
-
-* `2025.03.01` 그대로 찾기 → `2025\\.03\\.01`
-
----
-
-## 추천 용도
-
-* 계약서 이름 일괄 변경
-* 날짜, 전화번호, 주소 자동 치환
-* 보고서 내 특정 표현 자동 수정
-* 동일 양식 문서 대량 후처리
-
----
-
-## 확장 가능 기능
-
-* 치환된 항목 로그 저장
-* section별 변경 내역 출력
-* 이미지/표 제외 옵션
-* 여러 HWPX 일괄 처리
-* GUI 또는 웹 업로드 연동
-
----
-
-## 한 줄 요약
-
-이 도구는
-**HWPX 안의 기존 텍스트를 JSON 정규식 규칙으로 찾아 바꾸는 자동화 도구**입니다.
-
-````
-
----
-
-그리고 코드도 개념이 바뀌어야 합니다.
-
-기존 방식은 이런 구조였습니다.
-
-```python
-{{NAME}} -> JSON["NAME"]
-````
-
-지금 원하시는 방식은 이런 구조입니다.
-
-```python
-re.sub(pattern, replacement, xml_text)
-```
-
-예를 들면 실제 핵심 코드는 이렇게 가야 합니다.
-
-```python
-import json
-import re
-
-def apply_rules(xml_text: str, rules: list[dict]) -> str:
-    for rule in rules:
-        pattern = rule["pattern"]
-        replacement = rule["replacement"]
-        xml_text = re.sub(pattern, replacement, xml_text)
-    return xml_text
-```
-
-JSON도 딕셔너리형이 아니라 **규칙 리스트형**이 더 적합합니다.
-
-```json
-[
-  {
-    "pattern": "홍길동",
-    "replacement": "김철수"
-  },
-  {
-    "pattern": "2025\\.03\\.01",
-    "replacement": "2026.03.23"
-  }
-]
-```
-
-원하시는 표현을 더 정확히 한 줄로 정리하면 이렇습니다.
-
-**“HWPX를 읽어서 JSON 키를 넣는 것이 아니라, HWPX 안의 기존 특정 값을 JSON에 정의한 정규식 규칙으로 찾아 바꾸는 것”**
-
+그래서 이 프로젝트는 "정규식 + 템플릿 기반 자동화 90%"에 초점을 둡니다.

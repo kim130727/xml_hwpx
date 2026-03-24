@@ -1,9 +1,7 @@
 [project]
 name = "xml-hwpx"
 version = "0.1.0"
-description = "Add your description here"
+description = "Church bulletin HWPX automation with JSON placeholders and regex cleanup"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = [
-    "python-hwpx>=2.5",
-]
+dependencies = []
