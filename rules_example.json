@@ -1,0 +1,14 @@
+[
+  {
+    "pattern": "{임진산}",
+    "replacement": "진산이형"
+  },
+  {
+    "pattern": "{새누리3교회}",
+    "replacement": "새누리교회넘버쓰리"
+  },
+  {
+    "pattern": "{다같이}",
+    "replacement": "메롱메롱"
+  }
+]
